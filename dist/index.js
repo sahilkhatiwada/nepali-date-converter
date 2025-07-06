@@ -53,31 +53,18 @@ function subtractDaysFromBS(bs, days) {
     }
     return { year, month, day };
 }
-/**
- * Converts a Gregorian (AD) date to Bikram Sambat (BS).
- * @param adDate - The AD date to convert.
- * @returns The corresponding BS date.
- */
-function convertADToBS(adDate) {
-    // Only supports AD dates between 1943-04-14 and 1945-04-13 (BS 2000-2002)
-    const days = daysBetweenAD(bs_data_1.bsEpoch.ad, adDate);
-    return addDaysToBS(bs_data_1.bsEpoch.bs, days);
-}
-/**
- * Converts a Bikram Sambat (BS) date to Gregorian (AD).
- * @param bsDate - The BS date to convert.
- * @returns The corresponding AD date.
- */
-function convertBSToAD(bsDate) {
+function daysBetweenBS(bs1, bs2) {
     var _a;
-    // Only supports BS dates between 2000-01-01 and 2002-12-31
-    // Find days between bsEpoch.bs and bsDate
+    // Returns the number of days from bs1 to bs2 (bs2 - bs1)
     let days = 0;
-    let { year, month, day } = bs_data_1.bsEpoch.bs;
-    while (year < bsDate.year || (year === bsDate.year && month < bsDate.month) || (year === bsDate.year && month === bsDate.month && day < bsDate.day)) {
+    let { year, month, day } = bs1;
+    while (year < bs2.year || (year === bs2.year && month < bs2.month) || (year === bs2.year && month === bs2.month && day < bs2.day)) {
         day++;
         days++;
         const daysInMonth = (_a = bs_data_1.bsMonthData[year]) === null || _a === void 0 ? void 0 : _a[month - 1];
+        if (!daysInMonth) {
+            throw new Error(`Unsupported BS year: ${year}`);
+        }
         if (day > daysInMonth) {
             day = 1;
             month++;
@@ -87,6 +74,41 @@ function convertBSToAD(bsDate) {
             }
         }
     }
+    return days;
+}
+/**
+ * Converts a Gregorian (AD) date to Bikram Sambat (BS).
+ * @param adDate - The AD date to convert.
+ * @returns The corresponding BS date.
+ */
+function convertADToBS(adDate) {
+    // Validate input
+    if (adDate.month < 1 || adDate.month > 12 || adDate.day < 1 || adDate.day > 31) {
+        throw new Error('Invalid AD date');
+    }
+    // Only supports AD dates between 1943-04-14 and 1945-04-13 (BS 2000-2002)
+    const days = daysBetweenAD(bs_data_1.bsEpoch.ad, adDate);
+    if (days < 0 || days > 1095) { // ~3 years
+        throw new Error('AD date outside supported range (1943-1945)');
+    }
+    return addDaysToBS(bs_data_1.bsEpoch.bs, days);
+}
+/**
+ * Converts a Bikram Sambat (BS) date to Gregorian (AD).
+ * @param bsDate - The BS date to convert.
+ * @returns The corresponding AD date.
+ */
+function convertBSToAD(bsDate) {
+    // Validate input
+    if (bsDate.month < 1 || bsDate.month > 12 || bsDate.day < 1 || bsDate.day > 32) {
+        throw new Error('Invalid BS date');
+    }
+    // Only supports BS dates between 2000-01-01 and 2002-12-31
+    if (bsDate.year < 2000 || bsDate.year > 2002) {
+        throw new Error('BS date outside supported range (2000-2002)');
+    }
+    // Find days between bsEpoch.bs and bsDate
+    const days = daysBetweenBS(bs_data_1.bsEpoch.bs, bsDate);
     const d = new Date(bs_data_1.bsEpoch.ad.year, bs_data_1.bsEpoch.ad.month - 1, bs_data_1.bsEpoch.ad.day);
     d.setDate(d.getDate() + days);
     return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
@@ -138,13 +160,25 @@ function formatDate(date, format) {
 const nepaliWeekdays = ['आइतबार', 'सोमबार', 'मंगलबार', 'बुधबार', 'बिहीबार', 'शुक्रबार', 'शनिबार'];
 const englishWeekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 function getDayOfWeek(date, locale = 'en') {
+    // Validate locale
+    if (locale !== 'ne' && locale !== 'en') {
+        throw new Error('Invalid locale. Use "ne" for Nepali or "en" for English');
+    }
     let ad;
     if ('year' in date && 'month' in date && 'day' in date) {
+        // Validate date structure
+        if (date.month < 1 || date.month > 12 || date.day < 1 || date.day > 32) {
+            throw new Error('Invalid date object');
+        }
+        // Check if it's a BS date in supported range
         if (date.year >= 2000 && date.year <= 2002) {
             ad = convertBSToAD(date);
         }
-        else {
+        else if (date.year >= 1943 && date.year <= 1945) {
             ad = date;
+        }
+        else {
+            throw new Error('Date outside supported range');
         }
     }
     else {

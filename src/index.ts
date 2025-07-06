@@ -139,14 +139,34 @@ export function formatDate(date: BSDate | ADDate, format: DateFormat): string {
   let isBS = false;
   let bs: BSDate;
   let ad: ADDate;
-  if ((date as BSDate).year >= 2000 && (date as BSDate).year <= 2090) {
+  
+  // Check if it's a BS date in supported range
+  if ((date as BSDate).year >= 2000 && (date as BSDate).year <= 2002) {
     isBS = true;
     bs = date as BSDate;
     ad = convertBSToAD(bs);
-  } else {
+  } else if ((date as ADDate).year >= 1943 && (date as ADDate).year <= 1945) {
+    // AD date in supported range
     ad = date as ADDate;
     bs = convertADToBS(ad);
+  } else {
+    // For dates outside supported range, treat as AD date for English formatting
+    // and throw error for Nepali formatting since we can't convert
+    ad = date as ADDate;
+    if (format.startsWith('nepali')) {
+      throw new Error('Cannot format date in Nepali: date outside supported range');
+    }
+    // For English formatting, use the AD date as-is
+    const year = ad.year;
+    const month = englishMonths[ad.month - 1];
+    const day = ad.day;
+    if (format === 'english-full') {
+      return `${day} ${month} ${year}`;
+    } else {
+      return `${year}/${ad.month}/${day}`;
+    }
   }
+  
   if (format.startsWith('nepali')) {
     // Nepali format
     const year = toNepaliNumber(bs.year);
@@ -173,31 +193,49 @@ export function formatDate(date: BSDate | ADDate, format: DateFormat): string {
 const nepaliWeekdays = ['आइतबार', 'सोमबार', 'मंगलबार', 'बुधबार', 'बिहीबार', 'शुक्रबार', 'शनिबार'];
 const englishWeekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+function isBSDate(date: any): date is BSDate {
+  // Only treat as BSDate if year is in the supported BS range
+  return (
+    typeof date.year === 'number' &&
+    typeof date.month === 'number' &&
+    typeof date.day === 'number' &&
+    date.year >= 2000 && date.year <= 2002 &&
+    date.month >= 1 && date.month <= 12 &&
+    date.day >= 1 && date.day <= 32
+  );
+}
+
 export function getDayOfWeek(date: BSDate | ADDate, locale: 'ne' | 'en' = 'en'): string {
   // Validate locale
   if (locale !== 'ne' && locale !== 'en') {
     throw new Error('Invalid locale. Use "ne" for Nepali or "en" for English');
   }
-  
+
   let ad: ADDate;
   if ('year' in date && 'month' in date && 'day' in date) {
     // Validate date structure
     if (date.month < 1 || date.month > 12 || date.day < 1 || date.day > 32) {
       throw new Error('Invalid date object');
     }
-    
-    // Check if it's a BS date in supported range
-    if ((date as BSDate).year >= 2000 && (date as BSDate).year <= 2002) {
-      ad = convertBSToAD(date as BSDate);
-    } else if ((date as ADDate).year >= 1943 && (date as ADDate).year <= 1945) {
-      ad = date as ADDate;
+    if (isBSDate(date)) {
+      // BSDate logic
+      if (date.year <= 2002) {
+        try {
+          ad = convertBSToAD(date);
+        } catch (error) {
+          throw new Error('BS date outside supported range');
+        }
+      } else {
+        throw new Error('BS date outside supported range');
+      }
     } else {
-      throw new Error('Date outside supported range');
+      // Treat as ADDate
+      ad = date as ADDate;
     }
   } else {
     throw new Error('Invalid date object');
   }
-  
+
   const jsDate = new Date(ad.year, ad.month - 1, ad.day);
   const dayIdx = jsDate.getDay();
   return locale === 'ne' ? nepaliWeekdays[dayIdx] : englishWeekdays[dayIdx];

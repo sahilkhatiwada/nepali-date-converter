@@ -97,9 +97,6 @@ describe('Date Formatting Tests', () => {
 
     test('should display correct English month names', () => {
       const months = [
-        { month: 1, name: 'January' },
-        { month: 2, name: 'February' },
-        { month: 3, name: 'March' },
         { month: 4, name: 'April' },
         { month: 5, name: 'May' },
         { month: 6, name: 'June' },
@@ -112,7 +109,20 @@ describe('Date Formatting Tests', () => {
       ];
 
       months.forEach(({ month, name }) => {
-        const adDate: ADDate = { year: 1943, month, day: 1 };
+        const adDate: ADDate = { year: 1943, month, day: 15 };
+        const result = formatDate(adDate, 'english-full');
+        expect(result).toContain(name);
+      });
+      
+      // Test months from next year
+      const monthsNextYear = [
+        { month: 1, name: 'January' },
+        { month: 2, name: 'February' },
+        { month: 3, name: 'March' }
+      ];
+      
+      monthsNextYear.forEach(({ month, name }) => {
+        const adDate: ADDate = { year: 1944, month, day: 15 };
         const result = formatDate(adDate, 'english-full');
         expect(result).toContain(name);
       });
