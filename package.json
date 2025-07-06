@@ -1,0 +1,36 @@
+{
+  "name": "nepali-date-converter",
+  "version": "1.0.0",
+  "description": "A lightweight TypeScript/JavaScript package for converting dates between Gregorian (AD) and Bikram Sambat (BS) calendar systems with Nepali and English formatting support.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "build": "tsc"
+  },
+  "keywords": [
+    "nepali",
+    "date",
+    "converter",
+    "bikram-sambat",
+    "bs",
+    "calendar",
+    "localization",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/nepali-date-converter.git"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
+    "jest": "^30.0.4",
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.0.0"
+  }
+}
